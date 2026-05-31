@@ -1,0 +1,21 @@
+{
+  "title": "Corporate Compliance Profile",
+  "description": "Cross-regulatory employer compliance records from OSHA, EPA, DOL Wage & Hour, and CFPB",
+  "total_companies": 76974,
+  "serial_violators": 16754,
+  "total_penalties": 1458392899.4,
+  "source_counts": {
+    "osha": 75792,
+    "whd": 60262,
+    "epa": 20251,
+    "cfpb": 764
+  },
+  "sources": {
+    "osha": "OSHA Inspection & Violation Data",
+    "epa": "EPA ECHO Enforcement & Compliance History",
+    "whd": "DOL Wage & Hour Division Compliance Actions",
+    "cfpb": "CFPB Consumer Complaint Database"
+  },
+  "data_freshness": "Snapshot from source project pipelines",
+  "built": "2026-05-31"
+}

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corporate Compliance Profile</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.5; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 1.5em; margin-bottom: 4px; }
+.subtitle { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+.search-box { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; outline: none; margin-bottom: 8px; }
+.search-box:focus { border-color: #2196F3; }
+.hint { color: #999; font-size: 0.85em; margin-bottom: 16px; }
+.stats-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; }
+.stat { text-align: center; }
+.stat-val { font-size: 1.3em; font-weight: 700; color: #1a1a1a; }
+.stat-label { font-size: 0.75em; color: #888; }
+.results { margin-top: 8px; }
+.result-item { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+.result-item:hover { border-color: #2196F3; }
+.result-name { font-weight: 600; font-size: 1.05em; }
+.result-badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600; }
+.badge-osha { background: #fff3e0; color: #e65100; }
+.badge-epa { background: #e8f5e9; color: #2e7d32; }
+.badge-whd { background: #e3f2fd; color: #1565c0; }
+.badge-cfpb { background: #fce4ec; color: #c62828; }
+.badge-serial { background: #f44336; color: #fff; }
+.result-penalty { color: #666; font-size: 0.85em; margin-top: 4px; }
+.detail-view { background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; padding: 20px; margin-top: 8px; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.detail-name { font-size: 1.3em; font-weight: 700; }
+.back-btn { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.85em; color: #666; }
+.back-btn:hover { background: #f5f5f5; }
+.breadth-indicator { display: flex; gap: 4px; margin: 12px 0; }
+.breadth-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6em; font-weight: 700; color: #fff; }
+.breadth-dot.active-osha { background: #e65100; }
+.breadth-dot.active-epa { background: #2e7d32; }
+.breadth-dot.active-whd { background: #1565c0; }
+.breadth-dot.active-cfpb { background: #c62828; }
+.breadth-dot.inactive { background: #e0e0e0; color: #999; }
+.section { margin-top: 16px; padding: 14px; border-radius: 8px; border: 1px solid #e0e0e0; }
+.section-title { font-weight: 700; font-size: 0.95em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-icon { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.55em; font-weight: 800; color: #fff; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.stat-cell { padding: 8px; background: #fafafa; border-radius: 6px; }
+.stat-cell-val { font-size: 1.1em; font-weight: 700; }
+.stat-cell-label { font-size: 0.75em; color: #888; }
+.loading { text-align: center; padding: 40px; color: #999; }
+.no-results { text-align: center; padding: 30px; color: #999; }
+.footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid #e0e0e0; color: #999; font-size: 0.8em; text-align: center; }
+.footer a { color: #999; }
+@media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr 1fr; } .stats-bar { gap: 8px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Corporate Compliance Profile</h1>
+  <p class="subtitle">Cross-regulatory employer compliance records from four federal agencies</p>
+
+  <input type="text" class="search-box" id="search" placeholder="Search company name..." autofocus>
+  <p class="hint" id="hint">Search <span id="total-companies">...</span> companies cited by 2+ federal agencies</p>
+
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat"><div class="stat-val" id="stat-companies">-</div><div class="stat-label">Companies</div></div>
+    <div class="stat"><div class="stat-val" id="stat-serial">-</div><div class="stat-label">Serial Violators</div></div>
+    <div class="stat"><div class="stat-val" id="stat-penalties">-</div><div class="stat-label">Total Penalties</div></div>
+  </div>
+
+  <div id="results" class="results"></div>
+  <div id="detail" class="detail-view" style="display:none"></div>
+
+  <div class="footer">
+    <p>Data from <a href="https://www.osha.gov/" target="_blank">OSHA</a>,
+       <a href="https://echo.epa.gov/" target="_blank">EPA ECHO</a>,
+       <a href="https://www.dol.gov/agencies/whd" target="_blank">DOL Wage & Hour</a>,
+       <a href="https://www.consumerfinance.gov/" target="_blank">CFPB</a>.
+       All records are public.</p>
+    <p style="margin-top:4px">This is a transparency tool showing public enforcement records, not a risk score or rating.</p>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.href.includes('github.io') ? '' : '';
+let meta = null;
+let currentShard = null;
+let currentData = null;
+let debounceTimer = null;
+
+const sourceNames = {
+  osha: 'OSHA',
+  epa: 'EPA',
+  whd: 'Wage & Hour',
+  cfpb: 'CFPB'
+};
+
+const sourceColors = {
+  osha: 'badge-osha',
+  epa: 'badge-epa',
+  whd: 'badge-whd',
+  cfpb: 'badge-cfpb'
+};
+
+function fmt(n) {
+  if (n === null || n === undefined) return '-';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + n.toLocaleString();
+}
+
+function fmtN(n) {
+  if (n === null || n === undefined) return '-';
+  return n.toLocaleString();
+}
+
+async function loadMeta() {
+  try {
+    const r = await fetch('meta.json');
+    meta = await r.json();
+    document.getElementById('total-companies').textContent = meta.total_companies.toLocaleString();
+    document.getElementById('stat-companies').textContent = meta.total_companies.toLocaleString();
+    document.getElementById('stat-serial').textContent = meta.serial_violators.toLocaleString();
+    document.getElementById('stat-penalties').textContent = fmt(meta.total_penalties);
+    document.getElementById('stats-bar').style.display = 'flex';
+  } catch(e) {
+    console.error('Failed to load meta:', e);
+  }
+}
+
+async function loadShard(letter) {
+  if (currentShard === letter && currentData) return currentData;
+  try {
+    const r = await fetch(`data/companies/index_${letter}.json`);
+    currentData = await r.json();
+    currentShard = letter;
+    return currentData;
+  } catch(e) {
+    currentData = [];
+    currentShard = letter;
+    return [];
+  }
+}
+
+async function search(query) {
+  const resultsDiv = document.getElementById('results');
+  const detailDiv = document.getElementById('detail');
+  detailDiv.style.display = 'none';
+
+  if (!query || query.length < 2) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+
+  const first = query[0].toUpperCase();
+  const shardKey = /[A-Z]/.test(first) ? first.toLowerCase() : '_';
+
+  resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+  const data = await loadShard(shardKey);
+
+  const q = query.toLowerCase();
+  const matches = data.filter(e => e.n.toLowerCase().includes(q));
+  matches.sort((a, b) => (b.tp || 0) - (a.tp || 0));
+  const top = matches.slice(0, 50);
+
+  if (top.length === 0) {
+    resultsDiv.innerHTML = '<div class="no-results">No companies found. Try a different name.</div>';
+    return;
+  }
+
+  resultsDiv.innerHTML = top.map(e => `
+    <div class="result-item" onclick="showDetail('${e.h}', '${shardKey}')">
+      <div class="result-name">${esc(e.n)}</div>
+      <div class="result-badges">
+        ${e.s.map(s => `<span class="badge ${sourceColors[s]}">${sourceNames[s]}</span>`).join('')}
+        ${e.sv ? '<span class="badge badge-serial">Serial Violator</span>' : ''}
+      </div>
+      <div class="result-penalty">
+        Total penalties: ${fmt(e.tp)}
+        ${e.oi ? ' · ' + fmtN(e.oi) + ' OSHA inspections' : ''}
+        ${e.wc ? ' · ' + fmtN(e.wc) + ' wage cases' : ''}
+        ${e.cc ? ' · ' + fmtN(e.cc) + ' complaints' : ''}
+      </div>
+    </div>
+  `).join('') + (matches.length > 50 ? `<div class="no-results">${matches.length - 50} more results not shown. Refine your search.</div>` : '');
+}
+
+async function showDetail(hash, shardKey) {
+  const detailDiv = document.getElementById('detail');
+  const resultsDiv = document.getElementById('results');
+
+  detailDiv.innerHTML = '<div class="loading">Loading profile...</div>';
+  detailDiv.style.display = 'block';
+  resultsDiv.style.display = 'none';
+
+  try {
+    const shard = hash.substring(0, 2);
+    const r = await fetch(`data/c/${shard}.json`);
+    const data = await r.json();
+    const entry = data[hash];
+
+    if (!entry) {
+      detailDiv.innerHTML = '<div class="no-results">Profile not found.</div>';
+      return;
+    }
+
+    let html = `
+      <div class="detail-header">
+        <div class="detail-name">${esc(entry.name)}</div>
+        <button class="back-btn" onclick="hideDetail()">Back to results</button>
+      </div>
+
+      <div class="breadth-indicator">
+        ${['osha','epa','whd','cfpb'].map(s =>
+          `<div class="breadth-dot ${entry.sources.includes(s) ? 'active-'+s : 'inactive'}"
+               title="${sourceNames[s]}${entry.sources.includes(s) ? ' ✓' : ''}">${sourceNames[s].substring(0,1)}</div>`
+        ).join('')}
+      </div>
+
+      <p style="color:#666;font-size:0.9em">
+        Cited by <strong>${entry.regulatory_breadth} of 4</strong> federal agencies
+        ${entry.serial_violator ? ' · <span style="color:#f44336;font-weight:600">Serial Violator</span>' : ''}
+        · Total penalties: <strong>${fmt(entry.total_penalties)}</strong>
+      </p>
+    `;
+
+    // OSHA section
+    if (entry.osha) {
+      const o = entry.osha;
+      html += `
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon" style="background:#e65100">O</span>
+            OSHA — Workplace Safety
+          </div>
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(o.inspections)}</div><div class="stat-cell-label">Inspections</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(o.violations)}</div><div class="stat-cell-label">Total Violations</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(o.serious)}</div><div class="stat-cell-label">Serious</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(o.willful)}</div><div class="stat-cell-label">Willful</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(o.repeat)}</div><div class="stat-cell-label">Repeat</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmt(o.penalties)}</div><div class="stat-cell-label">Penalties</div></div>
+            ${o.fatality_inspections > 0 ? `<div class="stat-cell" style="background:#fff3e0"><div class="stat-cell-val" style="color:#d32f2f">${fmtN(o.fatality_inspections)}</div><div class="stat-cell-label">Fatality Inspections</div></div>` : ''}
+          </div>
+          ${o.states && o.states.length ? `<p style="margin-top:8px;font-size:0.8em;color:#888">States: ${o.states.join(', ')} · Latest: ${o.latest || 'N/A'}</p>` : ''}
+        </div>
+      `;
+    }
+
+    // EPA section
+    if (entry.epa) {
+      const e = entry.epa;
+      html += `
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon" style="background:#2e7d32">E</span>
+            EPA — Environmental Compliance
+          </div>
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(e.facilities)}</div><div class="stat-cell-label">Facilities</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(e.formal_actions)}</div><div class="stat-cell-label">Formal Actions</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmt(e.penalties)}</div><div class="stat-cell-label">Penalties</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(e.nc_quarters)}</div><div class="stat-cell-label">Non-Compliance Qtrs</div></div>
+            ${e.snc_count > 0 ? `<div class="stat-cell" style="background:#e8f5e9"><div class="stat-cell-val" style="color:#d32f2f">${fmtN(e.snc_count)}</div><div class="stat-cell-label">Significant NC</div></div>` : ''}
+          </div>
+          ${e.states && e.states.length ? `<p style="margin-top:8px;font-size:0.8em;color:#888">States: ${e.states.join(', ')}</p>` : ''}
+        </div>
+      `;
+    }
+
+    // WHD section
+    if (entry.whd) {
+      const w = entry.whd;
+      html += `
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon" style="background:#1565c0">W</span>
+            DOL Wage & Hour — Labor Compliance
+          </div>
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(w.cases)}</div><div class="stat-cell-label">Cases</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmt(w.back_wages)}</div><div class="stat-cell-label">Back Wages Owed</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(w.employees)}</div><div class="stat-cell-label">Employees Affected</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${fmt(w.penalties)}</div><div class="stat-cell-label">Civil Penalties</div></div>
+            ${w.flsa_cases > 0 ? `<div class="stat-cell"><div class="stat-cell-val">${fmtN(w.flsa_cases)}</div><div class="stat-cell-label">FLSA Cases</div></div>` : ''}
+            ${w.child_labor_cases > 0 ? `<div class="stat-cell" style="background:#fff3e0"><div class="stat-cell-val" style="color:#d32f2f">${fmtN(w.child_labor_cases)}</div><div class="stat-cell-label">Child Labor Cases</div></div>` : ''}
+            ${w.repeat_violations > 0 ? `<div class="stat-cell" style="background:#fff3e0"><div class="stat-cell-val" style="color:#d32f2f">${fmtN(w.repeat_violations)}</div><div class="stat-cell-label">Repeat Violations</div></div>` : ''}
+          </div>
+          ${w.states && w.states.length ? `<p style="margin-top:8px;font-size:0.8em;color:#888">States: ${w.states.join(', ')} · Latest: ${w.latest || 'N/A'}</p>` : ''}
+        </div>
+      `;
+    }
+
+    // CFPB section
+    if (entry.cfpb) {
+      const c = entry.cfpb;
+      const topProducts = c.products ? Object.entries(c.products).sort((a,b) => b[1]-a[1]).slice(0,5) : [];
+      html += `
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon" style="background:#c62828">C</span>
+            CFPB — Consumer Complaints
+          </div>
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-cell-val">${fmtN(c.total_complaints)}</div><div class="stat-cell-label">Total Complaints</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${c.timely_pct}%</div><div class="stat-cell-label">Timely Response</div></div>
+            <div class="stat-cell"><div class="stat-cell-val">${c.disputed_pct}%</div><div class="stat-cell-label">Disputed Rate</div></div>
+          </div>
+          ${topProducts.length ? `<p style="margin-top:8px;font-size:0.85em;color:#666">Top products: ${topProducts.map(([p,n]) => `${p} (${fmtN(n)})`).join(', ')}</p>` : ''}
+        </div>
+      `;
+    }
+
+    html += `
+      <p style="margin-top:16px;font-size:0.8em;color:#999">
+        All records are from public federal databases. This profile shows what agencies have documented, not a risk score or judgment.
+        Entity matching is best-effort — some entries may combine or miss related entities.
+      </p>
+    `;
+
+    detailDiv.innerHTML = html;
+
+  } catch(e) {
+    console.error('Failed to load detail:', e);
+    detailDiv.innerHTML = '<div class="no-results">Failed to load profile. Try again.</div>';
+  }
+}
+
+function hideDetail() {
+  document.getElementById('detail').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+document.getElementById('search').addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => search(this.value.trim()), 200);
+});
+
+loadMeta();
+</script>
+</body>
+</html>
